@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo de Temperatura IoT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        /* Estilo para el efecto de resplandor de temperatura (opcional) */
+        .glow-hot { box-shadow: 0 0 20px rgba(239, 68, 68, 0.7); border-color: #ef4444; }
+        .glow-normal { box-shadow: 0 0 10px rgba(96, 165, 250, 0.7); border-color: #60a5fa; }
+        
+        /* Estilo de Glassmorphism mejorado */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center bg-fixed">
+    
+    <div class="fixed inset-0 bg-slate-900/80 pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-md mx-auto p-4 min-h-screen flex flex-col">
+        
+        <header class="flex justify-between items-center py-6">
+            <div>
+                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-amber-300">
+                    Monitoreo Térmico
+                </h1>
+                <p class="text-xs text-slate-400">4 Sensores en Tiempo Real</p>
+            </div>
+            <button onclick="openConfig()" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition border border-slate-600">
+                <i data-lucide="settings" class="w-5 h-5 text-slate-300"></i>
+            </button>
+        </header>
+
+        <div id="statusIndicator" class="mb-8 flex items-center gap-3 bg-red-500/10 border border-red-500/20 p-3 rounded-lg backdrop-blur-sm">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+            <span class="text-sm font-medium text-red-400">Desconectado de la Nube</span>
+        </div>
+
+        <main class="space-y-4 flex-grow">
+            
+            <div class="glass-panel p-6 rounded-2xl border-blue-500 border-l-4 transition-all duration-300">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-blue-400">Temperatura Promedio</h2>
+                        <span class="text-xs text-slate-400 font-mono">/casa/sensores</span>
+                    </div>
+                    <i data-lucide="gauge" class="w-8 h-8 text-blue-400"></i>
+                </div>
+                <div class="flex items-end justify-between">
+                    <p id="avgTempDisplay" class="text-6xl font-extrabold text-blue-300">--</p>
+                    <span class="text-3xl text-blue-400 self-center">°C</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                
+                <div class="glass-panel p-4 rounded-2xl transition-all duration-300" id="card-temp1">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-medium">Sensor 1</h3>
+                        <i data-lucide="thermometer" id="icon-temp1" class="w-6 h-6 text-slate-500"></i>
+                    </div>
+                    <p id="temp1Display" class="text-4xl font-bold text-red-400 mb-2">-- °C</p>
+                    <div class="h-2 bg-slate-700 rounded-full">
+                        <div id="bar-temp1" class="h-2 bg-red-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl transition-all duration-300" id="card-temp2">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-medium">Sensor 2</h3>
+                        <i data-lucide="thermometer" id="icon-temp2" class="w-6 h-6 text-slate-500"></i>
+                    </div>
+                    <p id="temp2Display" class="text-4xl font-bold text-red-400 mb-2">-- °C</p>
+                    <div class="h-2 bg-slate-700 rounded-full">
+                        <div id="bar-temp2" class="h-2 bg-red-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl transition-all duration-300" id="card-temp3">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-medium">Sensor 3</h3>
+                        <i data-lucide="thermometer" id="icon-temp3" class="w-6 h-6 text-slate-500"></i>
+                    </div>
+                    <p id="temp3Display" class="text-4xl font-bold text-red-400 mb-2">-- °C</p>
+                    <div class="h-2 bg-slate-700 rounded-full">
+                        <div id="bar-temp3" class="h-2 bg-red-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl transition-all duration-300" id="card-temp4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-medium">Sensor 4</h3>
+                        <i data-lucide="thermometer" id="icon-temp4" class="w-6 h-6 text-slate-500"></i>
+                    </div>
+                    <p id="temp4Display" class="text-4xl font-bold text-red-400 mb-2">-- °C</p>
+                    <div class="h-2 bg-slate-700 rounded-full">
+                        <div id="bar-temp4" class="h-2 bg-red-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-8 text-center text-xs text-slate-500 font-mono">
+            IST Vida Nueva - Investigación
+        </footer>
+    </div>
+
+    <div id="configModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-11/12 max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="database" class="w-5 h-5 text-blue-400"></i>
+                Configuración Firebase
+            </h3>
+            <p class="text-sm text-slate-400 mb-4">Ingresa las credenciales de tu proyecto Firebase Realtime Database.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">API KEY</label>
+                    <input type="text" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">DATABASE URL</label>
+                    <input type="text" id="dbUrlInput" placeholder="https://proyecto.firebaseio.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                </div>
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button onclick="closeConfig()" class="flex-1 py-3 text-slate-400 hover:text-white transition">Cancelar</button>
+                <button onclick="saveConfig()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">Guardar y Conectar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        let app, db;
+        
+        // --- FUNCIONES GLOBALES ---
+        window.openConfig = () => document.getElementById('configModal').classList.remove('hidden');
+        window.closeConfig = () => document.getElementById('configModal').classList.add('hidden');
+        
+        window.saveConfig = () => {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const dbUrl = document.getElementById('dbUrlInput').value.trim();
+            
+            if(!apiKey || !dbUrl) return Swal.fire('Error', 'Faltan datos', 'error');
+
+            localStorage.setItem('iot_api_key', apiKey);
+            localStorage.setItem('iot_db_url', dbUrl);
+            
+            initFirebase(apiKey, dbUrl);
+            closeConfig();
+        };
+
+        // El control de focos ya no aplica, se elimina window.updateState
+        // --- FIN FUNCIONES GLOBALES ---
+
+        function initFirebase(apiKey, databaseURL) {
+            try {
+                const firebaseConfig = { apiKey, databaseURL };
+                app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+
+                // Escuchar cambios en la ruta donde se esperan las temperaturas
+                const tempsRef = ref(db, 'casa/temperaturas');
+                
+                onValue(tempsRef, (snapshot) => {
+                    updateStatusUI(true);
+                    const data = snapshot.val();
+                    if(data) {
+                        updateTemperaturesUI(data);
+                    }
+                }, (error) => {
+                    console.error(error);
+                    updateStatusUI(false);
+                });
+
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Credenciales inválidas', 'error');
+            }
+        }
+
+        /**
+         * Actualiza la UI con los datos de temperatura y calcula el promedio.
+         * Se asume que en Firebase tienes una estructura como:
+         * /casa/temperaturas: {
+         * temp1: 25.5,
+         * temp2: 26.1,
+         * temp3: 23.9,
+         * temp4: 27.0
+         * }
+         */
+        function updateTemperaturesUI(data) {
+            // Asegurarse de que tenemos los 4 valores
+            const temps = [
+                data.temp1 || 0,
+                data.temp2 || 0,
+                data.temp3 || 0,
+                data.temp4 || 0
+            ];
+
+            let sum = 0;
+
+            // Rango de temperatura para la barra de progreso (ajusta según tu necesidad)
+            const TEMP_MIN = 15; // Mínimo esperado
+            const TEMP_MAX = 40; // Máximo esperado
+
+            temps.forEach((temp, index) => {
+                const sensorNum = index + 1;
+                const tempFormatted = temp.toFixed(1);
+                const displayId = `temp${sensorNum}Display`;
+                const cardId = `card-temp${sensorNum}`;
+                const barId = `bar-temp${sensorNum}`;
+                
+                // Cálculo del porcentaje de la barra de progreso
+                let percentage = ((temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)) * 100;
+                percentage = Math.max(0, Math.min(100, percentage)); // Asegurar que está entre 0 y 100
+
+                // 1. Actualizar el valor numérico
+                document.getElementById(displayId).textContent = `${tempFormatted} °C`;
+
+                // 2. Actualizar la barra de progreso
+                const bar = document.getElementById(barId);
+                bar.style.width = `${percentage}%`;
+
+                // 3. Aplicar estilos y colores según la temperatura
+                const card = document.getElementById(cardId);
+                const color = percentage > 75 ? 'bg-red-500' : 
+                              percentage > 50 ? 'bg-amber-500' : 'bg-blue-500';
+                const textColor = percentage > 75 ? 'text-red-400' : 
+                                  percentage > 50 ? 'text-amber-400' : 'text-blue-400';
+                
+                // Resetear clases de color y aplicar nuevas
+                bar.className = `h-2 ${color} rounded-full transition-all duration-500`;
+                document.getElementById(displayId).className = `text-4xl font-bold ${textColor} mb-2`;
+
+                // Aplicar glow (opcional)
+                card.classList.remove('glow-hot', 'glow-normal');
+                if (percentage > 85) {
+                    card.classList.add('glow-hot');
+                } else if (percentage < 30) {
+                    card.classList.add('glow-normal');
+                }
+
+                sum += temp;
+            });
+
+            // 4. Calcular y mostrar el Promedio
+            const average = sum / temps.length;
+            document.getElementById('avgTempDisplay').textContent = average.toFixed(1);
+        }
+        
+        // (Se mantiene la función updateStatusUI sin cambios)
+        function updateStatusUI(connected) {
+            const el = document.getElementById('statusIndicator');
+            if(connected) {
+                el.className = "mb-8 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg backdrop-blur-sm transition-all";
+                el.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-sm font-medium text-emerald-400">Conectado a Firebase</span>
+                `;
+            } else {
+                el.className = "mb-8 flex items-center gap-3 bg-red-500/10 border border-red-500/20 p-3 rounded-lg backdrop-blur-sm transition-all";
+                el.innerHTML = `<span class="h-3 w-3 rounded-full bg-red-500"></span><span class="text-sm font-medium text-red-400">Desconectado</span>`;
+            }
+        }
+
+        // Cargar config guardada al inicio
+        lucide.createIcons();
+        const savedKey = localStorage.getItem('iot_api_key');
+        const savedUrl = localStorage.getItem('iot_db_url');
+        
+        if(savedKey && savedUrl) {
+            document.getElementById('apiKeyInput').value = savedKey;
+            document.getElementById('dbUrlInput').value = savedUrl;
+            initFirebase(savedKey, savedUrl);
+        } else {
+            // Abrir config si no hay datos
+            setTimeout(openConfig, 1000); 
+        }
+
+    </script>
+</body>
+</html>
